@@ -17,7 +17,7 @@ from os.path import basename
 #IAM_User_To_Search = "aws_sys_prd_snow01"
 now = datetime.now()
 formatnow = now.strftime("%Y-%m-%d-%H-%M")
-csv_header = "AWS_Account_number,AWS_Account_Name,Region,VPCId,SubnetID,CiDrblock,AZ, AZId"
+csv_header = "AWS_Account_name,AWS_Account_number,Region,VPCId,SubnetID,CiDrblock,AZ, AZId"
 csv_file = "AWS-Subnets-" + formatnow + ".csv"
 with open(csv_file, 'w') as csv:
     csv.write(csv_header + "\n")
@@ -101,7 +101,24 @@ for account in output_acc_array:
                  line3 = (line2 + ',' + subnet['VpcId'] + ',' + subnet['SubnetId'] + ',' + subnet['CidrBlock'] + ',' + subnet['AvailabilityZone'] + ',' + subnet['AvailabilityZoneId'])
                  print(line3)
                  csv.write(line3 + "\n")
-            
+        next_token1 = False
+        if "NextToken" in subnet_call.keys():
+            next_token1 = True
+            token_id = subnet_call['NextToken']
+            while next_token1 == True:
+                sleep(1)
+                next_subnets = ec2_client.describe_subnets(NextToken=token_id)
+                subnet_details = next_subnets['Subnets']
+                for subnet in subnet_details:
+                    with open(csv_file, 'a') as csv:
+                        line4 = (line2 + ',' + subnet['VpcId'] + ',' + subnet['SubnetId'] + ',' + subnet['CidrBlock'] + ',' + subnet['AvailabilityZone'] + ',' + subnet['AvailabilityZoneId'])
+                        print(line4)
+                        csv.write(line4 + "\n")
+                if "NextToken" in next_subnets.keys():
+                    next_token1 = True
+                    token_id = next_subnets['NextToken']
+                else:
+                    next_token1 = False
 workspace = os.environ['WORKSPACE']
 file_url = 'https://jenkins.cloud.moodys.net'
 for folder in workspace.split('/')[4:]:
