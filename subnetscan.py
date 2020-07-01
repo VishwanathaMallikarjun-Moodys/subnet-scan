@@ -91,7 +91,7 @@ for account in output_acc_array:
         subnet_details = subnet_call['Subnets']
         line2 = line1 + ',' + region['RegionName']
         for subnet in subnet_details:
-            vpc_tags = client.describe_vpcs(VpcIds=[subnet['VpcId']])['Vpcs'][0]['Tags']
+            vpc_tags = ec2_client.describe_vpcs(VpcIds=[subnet['VpcId']])['Vpcs'][0]['Tags']
             vpc_name=""
             subnet_name=""
             for key in vpc_tags:
@@ -119,7 +119,7 @@ for account in output_acc_array:
                 next_subnets = ec2_client.describe_subnets(NextToken=token_id)
                 subnet_details = next_subnets['Subnets']
                 for subnet in subnet_details:
-                    vpc_tags = client.describe_vpcs(VpcIds=[subnet['VpcId']])['Vpcs'][0]['Tags']
+                    vpc_tags = ec2_client.describe_vpcs(VpcIds=[subnet['VpcId']])['Vpcs'][0]['Tags']
                     vpc_name=""
                     subnet_name=""
                     for key in vpc_tags:
