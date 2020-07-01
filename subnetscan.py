@@ -1,19 +1,16 @@
 #!/usr/bin/env python3
-
 """
   Script Name:  Scan_for_roles.py
   Purpose:  This script lists IAM roles that are configure for SAML authentication
   Requirements:  Python3 with the import modules available and iam access.
   Author:  Manjot Pelia
 """
-
 import boto3, botocore, sys, json, argparse, uuid, shutil, os
 from time import sleep
 from datetime import datetime
 import socket
 import smtplib
 from os.path import basename
-
 #IAM_User_To_Search = "aws_sys_prd_snow01"
 now = datetime.now()
 formatnow = now.strftime("%Y-%m-%d-%H-%M")
@@ -36,7 +33,6 @@ account_list = []
 accounts = org_client.list_accounts()
 output_acc_array = []
 subnet = {}
-
 for account in accounts['Accounts']:
     output_acc = {}
     output_acc['Id'] = account['Id']
@@ -67,7 +63,6 @@ print("\nGetting a current region list...\n")
 ec2_client = boto3.client('ec2', region_name='us-east-1')
 regions = ec2_client.describe_regions()['Regions']
 print(regions)
-
 for account in output_acc_array:
     print("****-------------- Begin Account: " + account['Name'] + " --------------****\n")
     subnet[account['Name']] = {}
@@ -84,7 +79,6 @@ for account in output_acc_array:
         print("\n****-------------- End Account: " + account['Name'] + " ----------------****\n")
         subnet[account['Name']]['Access'] = "DENIED"
         continue
-
     credentials = assumed_role['Credentials']
     line1 = account['Name'] + ',' + account['Id']
     print("Successfully assumed role. Performing scans in all regions.\n")
@@ -97,8 +91,23 @@ for account in output_acc_array:
         subnet_details = subnet_call['Subnets']
         line2 = line1 + ',' + region['RegionName']
         for subnet in subnet_details:
-         	with open(csv_file, 'a') as csv:
-                 line3 = (line2 + ',' + subnet['VpcId'] + ',' + subnet['SubnetId'] + ',' + subnet['CidrBlock'] + ',' + subnet['AvailabilityZone'] + ',' + subnet['AvailabilityZoneId'])
+            vpc_tags = client.describe_vpcs(VpcIds=[subnet['VpcId']])['Vpcs'][0]['Tags']
+            vpc_name=""
+            subnet_name=""
+            for key in vpc_tags:
+                if key['Key']== 'Name':
+                    vpc_name=key['Value']
+                    break
+            if len(vpc_name)==0:
+                vpc_name="UnNamed_VPC" 
+            for key in subnet['Tags']:
+                if key['Key']== 'Name':
+                    subnet_name=key['Value']
+                    break
+            if len(subnet_name)==0:
+                subnet_name="UnNamedSubnet" 
+            with open(csv_file, 'a') as csv:
+                 line3 = (line2 + ',' + vpc_name +','+ subnet['VpcId'] + ',' + subnet_name +','+ subnet['SubnetId'] + ',' + subnet['CidrBlock'] + ',' + subnet['AvailabilityZone'] + ',' + subnet['AvailabilityZoneId'])
                  print(line3)
                  csv.write(line3 + "\n")
         next_token1 = False
@@ -110,8 +119,23 @@ for account in output_acc_array:
                 next_subnets = ec2_client.describe_subnets(NextToken=token_id)
                 subnet_details = next_subnets['Subnets']
                 for subnet in subnet_details:
+                    vpc_tags = client.describe_vpcs(VpcIds=[subnet['VpcId']])['Vpcs'][0]['Tags']
+                    vpc_name=""
+                    subnet_name=""
+                    for key in vpc_tags:
+                        if key['Key']== 'Name':
+                            vpc_name=key['Value']
+                            break
+                    if len(vpc_name)==0:
+                        vpc_name="UnNamed_VPC" 
+                    for key in subnet['Tags']:
+                        if key['Key']== 'Name':
+                            subnet_name=key['Value']
+                            break
+                    if len(subnet_name)==0:
+                        subnet_name="UnNamedSubnet" 
                     with open(csv_file, 'a') as csv:
-                        line4 = (line2 + ',' + subnet['VpcId'] + ',' + subnet['SubnetId'] + ',' + subnet['CidrBlock'] + ',' + subnet['AvailabilityZone'] + ',' + subnet['AvailabilityZoneId'])
+                        line4 = (line2 + ',' + vpc_name +','+ subnet['VpcId'] + ',' + subnet_name +','+ subnet['SubnetId'] + ',' + subnet['CidrBlock'] + ',' + subnet['AvailabilityZone'] + ',' + subnet['AvailabilityZoneId'])
                         print(line4)
                         csv.write(line4 + "\n")
                 if "NextToken" in next_subnets.keys():
@@ -126,3 +150,4 @@ for folder in workspace.split('/')[4:]:
 file_url += '/ws/' + csv_file
 file_url = file_url.replace(' ', '%20')
 print("\n\nAWS Subnets: " + file_url)
+
