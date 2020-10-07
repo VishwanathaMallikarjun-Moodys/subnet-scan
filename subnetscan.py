@@ -66,7 +66,7 @@ print(regions)
 for account in output_acc_array:
     print("****-------------- Begin Account: " + account['Name'] + " --------------****\n")
     subnet[account['Name']] = {}
-    role_to_assume = "arn:aws:iam::" + account['Id'] + ":role/mitss/MIT_ReadOnly"
+    role_to_assume = "arn:aws:iam::" + account['Id'] + ":role/CLD-SS-Automation-Admin"
     sts_client = boto3.client('sts')
     try:
         assumed_role = sts_client.assume_role(RoleArn=role_to_assume, RoleSessionName=session_name)
